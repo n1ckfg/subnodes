@@ -9,37 +9,24 @@
 /**
  * Module dependencies.
  */
-var express     = require('express'),
-	app         = express(),
-    http		= require('http'),
-    server 		= http.createServer(app),
-    io			= require('socket.io').listen(server);
+var express     = require( 'express' ),
+    app         = express(),
+    server		  = require( 'http' ).createServer( app ),
+    nowjs       = require( 'now' );
 
-app.root    	= __dirname;
+app.root        = __dirname;
 
-io.configure('production', function(){
-  io.enable('browser client etag');
-  io.set('log level', 1);
+// create the application
+require('./app/config')( app, express );
+require('./app/server/db');
+require('./app/server/router')( app );
 
-  io.set('transports', [
-    'websocket'
-  , 'flashsocket'
-  , 'htmlfile'
-  , 'xhr-polling'
-  , 'jsonp-polling'
-  ]);
-});
+/**** DATABASE STUFF ***/
+var db = new Database( "myhardware" );
+/***********************/
+require('./app/server/modules/bb')( nowjs, db );
+require('./app/server/modules/chat')( nowjs, server, db );
 
-io.configure('development', function(){
-  io.set('transports', ['websocket']);
-});
-
-// finally create this application, our root server //
-require('./app/config')(app, express);
-require('./app/server/router')(app);
-require('./app/server/db')
-require('./app/server/modules/chat')(io);
-
-server.listen(8080, function() {
+server.listen( 8080, function() {
   console.log("Express server listening on port %d in %s mode", server.address().port, app.settings.env);
 });

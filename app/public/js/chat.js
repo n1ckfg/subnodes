@@ -1,13 +1,14 @@
 // HOT PROBS Chat client-side functionality
-;(function($, window, io) {
+;(function( $, window, now ) {
 
 	var chatClient = {
 		'cfg': {
 			// grab screenname from end of URL
 			'screenname': window.location.search.substring(1).split("=")[1],
-			'socket': null,
+			'$header': null,
 			'$msg': null,
-			'$incoming': null
+			'$incoming': null,
+			'colors': ['#c5270d', '#D68434', '#116A9F', '#7945ed', '#5F209E', '#eaec6a', '#ec38c0']
 		},
 		'evt': {
 			'ready': function() {
@@ -17,9 +18,13 @@
 		'fn': {
 			'init': function() {
 				// set up DOM elements
+				chatClient.cfg.$header = $( '#header' );
 				chatClient.cfg.$msg = $('#msg');
 				chatClient.cfg.$incoming = $('#incoming');
 				// bind events
+				chatClient.cfg.$header.click( function() {
+					window.location = "/";
+				});
 				chatClient.cfg.$msg.focus();
 				chatClient.cfg.$msg.keypress( function( e ) {
 					if( e.which == 13 ) {
@@ -27,42 +32,29 @@
 						return false;
 					}
 				});
-				// setting the blur callback for iOS devices
-				// captures hitting the 'done' button (takes focus off $msg textfield)
-				chatClient.cfg.$msg.blur( chatClient.fn.sendMessage );
-				// set socket connection to listen on the 'chat' namespace
-				chatClient.cfg.socket = io.connect('/chat');
-				chatClient.cfg.socket.on( 'status', chatClient.fn.onStatus );
-				chatClient.cfg.socket.on( 'userReady', chatClient.fn.userReady );
-				chatClient.cfg.socket.on( 'userMessage', chatClient.fn.userMessage );
-				chatClient.cfg.socket.on( 'userDisconnected', chatClient.fn.userDisconnected );
-				// register the user's name with the socket connection on the server
-				chatClient.cfg.socket.emit('userReady', {name : chatClient.cfg.screenname });				
+				// set up listeners on now object
+				now.name = chatClient.cfg.screenname;
+				now.color = chatClient.cfg.colors[ Math.floor(Math.random() * chatClient.cfg.colors.length) ];
+				now.userConnect = function( data ) {
+					chatClient.fn.connect( data );
+				}
+				now.userDisconnect = function( data ) {
+					chatClient.fn.disconnect( data );
+				}
+				now.receiveMessage = function( data ) {
+					chatClient.fn.receiveMessage( data );
+				}
+				now.ready( function() {
+					console.log("ready!");
+
+				});	
 			},
 			'autoscroll': function() {
 				var incoming = document.getElementById( 'conversation' );
 					incoming.scrollTop = incoming.scrollHeight;
 			},
-			'sendMessage': function() {
-				// broadcast userMessage event with user's screenname + message
-				// if message is not blank
-				if(chatClient.cfg.$msg.val() != '') {
-					chatClient.cfg.socket.emit( 'userMessage', 
-											{ 
-												name: chatClient.cfg.screenname, 
-												message: chatClient.cfg.$msg.val() 
-											});
-				}
-				// set message field to blank after sending
-				chatClient.cfg.$msg.val('');
-			},
-			'status': function( connections ) {
-				//var i = 0;
-				//for (var p in connections) i++;
-				//var str = i > 1 ? ' are ' + i + ' people ' : ' is ' + i + ' person ';
-				//$('#connected').html( 'There ' + str + ' current connected' );
-			},
-			'userReady': function( data ) {
+			'connect': function( data ) {
+				// someone connects
 				if( data.name ) {
 					var decoded = decodeURIComponent( data.name );
 					chatClient.cfg.$incoming
@@ -70,15 +62,8 @@
 					chatClient.fn.autoscroll();
 				}
 			},
-			'userMessage': function( data ) {
-				if( data.name ) {
-					var decoded = decodeURIComponent( data.name );
-					chatClient.cfg.$incoming
-						.append( '<div style="color:'+data.color+'">'+decoded+' > '+data.message+'</div>');
-					chatClient.fn.autoscroll();
-				}
-			},
-			'userDisconnected': function( data ) {
+			'disconnect': function( data ) {
+				// someone disconnects
 				if( data.name ) {
 					var decoded = decodeURIComponent( data.name );
 					chatClient.cfg.$incoming
@@ -86,17 +71,27 @@
 					chatClient.fn.autoscroll();
 				}
 			},
-			'announcement': function( data ) {
+			'receiveMessage': function( data ) {
+				// receive message sent by another user
 				if( data.name ) {
 					var decoded = decodeURIComponent( data.name );
 					chatClient.cfg.$incoming
-						.append('<span style="width:100%;margin:auto;text-align:center;color:'+data.color+'">'+decoded+'</span> > <span style="color:#8a00ff">disconnected</span><br>');
+						.append( '<div style="color:'+data.color+'">'+decoded+' > '+data.message+'</div>');
 					chatClient.fn.autoscroll();
 				}
+			},
+			'sendMessage': function() {
+				// broadcast userMessage event with user's screenname + message
+				// if message is not blank
+				if(chatClient.cfg.$msg.val() != '') {
+					now.sendMessage( chatClient.cfg.$msg.val() );
+				}
+				// set message field to blank after sending
+				chatClient.cfg.$msg.val('');
 			}
 		}
 	};
 
 	chatClient.evt.ready();
 	
-}(jQuery, window, io));
+}( jQuery, window, now ));

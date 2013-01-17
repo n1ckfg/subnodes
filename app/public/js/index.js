@@ -5,6 +5,7 @@
 		'cfg': {
 			'$screenname': null,
 			'$joinButton': null,
+			'$bbButton': null,
 			'screenname': null
 		},
 		'evt': {
@@ -14,26 +15,32 @@
 		},
 		'fn': {
 			'init': function() {
-				// set up DOM elements
 				index.cfg.$screenname = $( '#screenname' );
 				index.cfg.$joinButton = $( '#joinButton' );
-				index.cfg.$screenname.keypress( function( e ) {
-					if( e.which == 13 ) {
-						index.fn.joinChat();
-						return false;
-					}
-				});
+				index.cfg.$bbButton = $( '#bbButton' );
 				index.cfg.$joinButton.click( function() {
-					index.fn.joinChat();
+					index.fn.joinGroupChat();
+				});
+				index.cfg.$bbButton.click( function() {
+					index.fn.viewMessageBoard();
 				});
 			},
-			'joinChat': function() {
+			'joinGroupChat': function() {
 				// validate that screenname isn't blank before proceeding
 				index.cfg.screenname = index.cfg.$screenname.text();
 				var valid = index.fn.validateName();
 				if( valid ) {
 					// pass the screenname onto the chat page
 					window.location = "/chat?screenname="+index.cfg.screenname;
+				}
+			},
+			'viewMessageBoard': function() {
+				// validate that screenname isn't blank before proceeding
+				index.cfg.screenname = index.cfg.$screenname.text();
+				var valid = index.fn.validateName();
+				if( valid ) {
+					// pass the screenname onto the chat page
+					window.location = "/bb?screenname="+index.cfg.screenname;
 				}
 			},
 			'validateName': function() {

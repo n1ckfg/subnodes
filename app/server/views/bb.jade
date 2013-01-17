@@ -1,0 +1,12 @@
+extends layout
+
+block content
+	#bb
+		#allMessages
+		#postMessage
+			textarea(rows='1', name='msg', id='msg')
+		div(class='buttonWrapper')
+			button(id='postButton') POST HOT PROB
+
+block scripts
+	script(src='/js/bb.js')
